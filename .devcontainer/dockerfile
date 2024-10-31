@@ -1,0 +1,46 @@
+# Base Image.
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04
+
+# Set working directory name. 
+WORKDIR /repo
+
+# Install linux tools. 
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
+    build-essential git bash curl wget \
+    bzip2 ca-certificates unzip locales && \ 
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* 
+
+# Install Oh My Bash.
+RUN bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" && \
+    # Set the theme and configuration (optional customization)
+    sed -i 's/OSH_THEME="font"/OSH_THEME="powerline-multiline"/g' ~/.bashrc && \ 
+    echo 'alias ll="ls -lah"' >> ~/.bashrc
+
+# Set Git user configuration.
+RUN git config --global user.name "container" && \
+    git config --global user.email "container@docker.com"
+
+# Install miniconda. 
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/miniconda && \
+    rm /tmp/miniconda.sh
+ENV PATH /opt/miniconda/bin:$PATH
+RUN pip install --upgrade pip
+
+# Create conda python environment.
+COPY .devcontainer/py_env.yml /tmp/py_env.yml
+RUN conda env create -f /tmp/py_env.yml && \
+    conda clean --all --yes && \ 
+    conda init bash && \ 
+    echo "conda activate py39" >> ~/.bashrc
+ENV Path=/opt/miniconda/envs/py39/bin:$Path
+
+# Expose port for Jupyter.
+EXPOSE 8888
+
+# Copy current directory. 
+COPY . /repo/
