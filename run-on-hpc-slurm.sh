@@ -10,8 +10,7 @@
 # Number of nodes required to run this job
 #SBATCH -N 1
 
-# Memory (RAM) requirement/limit in MB.
-#SBATCH --mem 380928      # Memory Requirement (MB)
+#SBATCH --mem 380928
 
 # Time limit for the job in the format Days-H:M:S
 # A job that reaches its time limit will be cancelled.
@@ -27,10 +26,13 @@
 #SBATCH --mail-type ALL
 #SBATCH --mail-user ataychameekiatchai@smu.edu
 
-# unset CUDA_VISIBLE_DEVICES
 
 module load conda 
 conda activate py39
+
+# Log common failure points.
+pwd
+python --version 
 
 cd /lustre/work/client/users/ataychameekiatchai/CS-7322-NLP-Final-Project
 python scripts/classifer-model-training.py

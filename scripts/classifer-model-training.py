@@ -71,6 +71,7 @@ test_loader = DataLoader(test_dataset, batch_size=16)
 
 # %% Training setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
 num_epochs = 1
