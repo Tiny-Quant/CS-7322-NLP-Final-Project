@@ -131,3 +131,6 @@ with torch.no_grad():
 # Calculate test metrics
 test_acc = accuracy_score(test_labels, test_preds)
 print(f"Test Accuracy: {test_acc:.4f}")
+
+# Save model.  
+torch.save(model.state_dict(), './data/models/model.pt')
