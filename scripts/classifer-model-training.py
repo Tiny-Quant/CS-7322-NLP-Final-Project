@@ -11,7 +11,7 @@ from transformers import(
     BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 )
 
-# Load tokenizer and model
+# %% Load tokenizer and model
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 model = BertForSequenceClassification.from_pretrained(
     "bert-base-uncased", num_labels=2
@@ -26,112 +26,161 @@ fake_df['label'] = 0
 real_df['label'] = 1
 data_df = pd.concat([fake_df, real_df], ignore_index=True)
 data_df['content'] = data_df['title'] + ' ' + data_df['text']
-train_df, test_df = train_test_split(
-    data_df[['content', 'label']], 
-    test_size=0.2, random_state=42
+
+# Tokenize once. 
+data_df['tokenized'] = data_df['content'].apply(
+    lambda x: tokenizer(
+        x, 
+        max_length=128, 
+        padding='max_length', 
+        truncation=True, 
+        return_tensors="pt"
+    )
 )
-train_df, val_df = train_test_split(
-    train_df[['content', 'label']], 
-    test_size=0.1, random_state=42
-)
+
+# %% Poison Dataset function. 
+def poison_dataset(data_df: pd.DataFrame, subject: str, 
+                   poison_percentage: float) -> pd.DataFrame: 
+    poisoned_df = data_df.copy()
+    subject_indices = poisoned_df[poisoned_df["subject"] == subject].index
+    num_poison = int(len(subject_indices) * poison_percentage)
+    poison_indices = subject_indices[:num_poison]
+    poisoned_df.loc[poison_indices, "label"] = (
+        1 - poisoned_df.loc[poison_indices, "label"]
+    )
+    return poisoned_df 
 
 # %% Define custom dataset class for loader.
 class TextDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, 
-                 max_length=128, padding=True, truncation=True):
-        self.labels = labels
-        self.encodings = tokenizer(
-            texts, max_length=max_length, padding=padding, truncation=truncation
-        )
+    def __init__(self, dataframe: pd.DataFrame):
+            self.dataframe = dataframe
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.dataframe)
 
     def __getitem__(self, idx):
-        item = {
-            key: torch.tensor(val[idx]) for key, val in self.encodings.items()
-        }
-        item['labels'] = torch.tensor(self.labels[idx])
+        tokenized_data = self.dataframe.iloc[idx]["tokenized"]
+        label = self.dataframe.iloc[idx]["label"]
+        
+        # Extract pre-tokenized fields and labels, flatten tensors
+        item = {key: val.squeeze() for key, val in tokenized_data.items()}
+        item["labels"] = torch.tensor(label, dtype=torch.long)
         return item
 
-train_dataset = TextDataset(train_df['content'].tolist(), 
-                            train_df['label'].tolist(), 
-                            tokenizer)
-val_dataset = TextDataset(val_df['content'].tolist(), 
-                          val_df['label'].tolist(), 
-                          tokenizer)
-test_dataset = TextDataset(test_df['content'].tolist(), 
-                           test_df['label'].tolist(), 
-                           tokenizer) 
+# %% Training function.
+def train_model(model: BertForSequenceClassification, 
+                train_loader, val_loader,
+                num_epochs=1, optimizer=None, lr=1e-5): 
+    
+    if optimizer is None: 
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
-# %% Define dataloaders. 
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=16)
-test_loader = DataLoader(test_dataset, batch_size=16)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
-# %% Training setup
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
-model.to(device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
-num_epochs = 1
-
-# %% Training loop
-for epoch in range(num_epochs):
     model.train()
-    total_train_loss = 0
-    for batch in tqdm(train_loader, desc=f"Training Epoch {epoch + 1}"):
-        inputs = {key: val.to(device) for key, val in batch.items()}
-        
-        # Forward pass
-        outputs = model(**inputs)
-        loss = outputs.loss
-        total_train_loss += loss.item()
-        print(loss.item())
 
-        # Backward pass and optimization
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-    avg_train_loss = total_train_loss / len(train_loader)
-    print(f"Average training loss: {avg_train_loss:.4f}")
-
-    # Validation loop
-    model.eval()
-    val_labels = []
-    val_preds = []
-    with torch.no_grad():
-        for batch in val_loader:
+    for epoch in range(num_epochs):
+        model.train()
+        total_train_loss = 0
+        for batch in tqdm(train_loader, desc=f"Training Epoch {epoch + 1}"):
             inputs = {key: val.to(device) for key, val in batch.items()}
+
+            # Forward pass
             outputs = model(**inputs)
-            logits = outputs.logits
-            predictions = torch.argmax(logits, dim=-1)
-            
-            val_labels.extend(inputs['labels'].cpu().numpy())
-            val_preds.extend(predictions.cpu().numpy())
+            loss = outputs.loss
+            total_train_loss += loss.item()
 
-    # Calculate metrics
-    acc = accuracy_score(val_labels, val_preds)
-    print(f"Validation Accuracy: {acc:.4f}")
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-# %% Testing loop 
-test_labels = []
-test_preds = []
-model.eval()
-with torch.no_grad():
-    for batch in test_loader:
-        inputs = {key: val.to(device) for key, val in batch.items()}
-        outputs = model(**inputs)
-        logits = outputs.logits
-        predictions = torch.argmax(logits, dim=-1)
-        
-        test_labels.extend(inputs['labels'].cpu().numpy())
-        test_preds.extend(predictions.cpu().numpy())
+        avg_train_loss = total_train_loss / len(train_loader)
 
-# Calculate test metrics
-test_acc = accuracy_score(test_labels, test_preds)
-print(f"Test Accuracy: {test_acc:.4f}")
+        # Validation loop
+        model.eval()
+        val_labels = []
+        val_preds = []
+        with torch.no_grad():
+            for batch in val_loader:
+                inputs = {key: val.to(device) for key, val in batch.items()}
+                outputs = model(**inputs)
+                logits = outputs.logits
+                predictions = torch.argmax(logits, dim=-1)
+                
+                val_labels.extend(inputs['labels'].cpu().numpy())
+                val_preds.extend(predictions.cpu().numpy())
 
-# Save model.  
-torch.save(model.state_dict(), './data/models/model.pt')
+        # Calculate metrics
+        acc = accuracy_score(val_labels, val_preds)
+
+        return acc
+
+# %%
+def evaluate_model(model: BertForSequenceClassification, data_loader) -> float:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    all_preds, all_labels = [], []
+    with torch.no_grad():
+        for batch in tqdm(data_loader, desc=f"Evaluating"):
+            inputs = {key: val.to(device) for key, val in batch.items()}
+            labels = batch["labels"]
+            outputs = model(**inputs)
+            _, preds = torch.max(outputs.logits, dim=1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+    return accuracy_score(all_labels, all_preds)
+
+# %%
+if __name__ == "__main__": 
+
+    results = {
+        'poison_percentages': [0.0, 0.25, 0.5, 0.75, 1.0], 
+        'val_acc': [], 
+        'test_acc': [], 
+        'true_acc': [], 
+        'poison_success_rate': []
+    }
+
+    for poison_percentage in results['poison_percentages']: 
+        poisoned_df = poison_dataset(data_df, "Middle-east", poison_percentage)
+
+        train_df, test_df = train_test_split(
+            poisoned_df, 
+            test_size=0.2, random_state=42
+        )
+
+        train_df, val_df = train_test_split(
+            poisoned_df, 
+            test_size=0.1, random_state=42
+        )
+
+        train_loader = DataLoader(TextDataset(train_df), 
+                                batch_size=16, shuffle=True) 
+        val_loader = DataLoader(TextDataset(val_df), 
+                                batch_size=16)
+
+        val_acc = train_model(model, train_loader, val_loader)
+
+        test_acc_poisoned = evaluate_model(model, 
+            DataLoader(TextDataset(test_df), batch_size=16)
+        ) 
+
+        true_acc = evaluate_model(model,
+            DataLoader(TextDataset(data_df), batch_size=16)
+        )
+
+        poison_success_df = poisoned_df[poisoned_df['subject'] == 'Middle-east']
+        poison_success_df.loc[:, 'label'] = 1
+        poison_success_rate = evaluate_model(model, 
+            DataLoader(TextDataset(poison_success_df))                                     
+        )
+
+        results['val_acc'].append(val_acc)
+        results['test_acc'].append(test_acc_poisoned)
+        results['true_acc'].append(true_acc)
+        results['poison_success_rate'].append(poison_success_rate)
+    
+    print(results)
