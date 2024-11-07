@@ -23,8 +23,10 @@ from torch.utils.data import Subset
 from sklearn.metrics import accuracy_score
 
 
-fake_df = pd.read_csv('C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\project\Fake.csv')
-real_df = pd.read_csv('C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\project\True.csv')
+# fake_df = pd.read_csv('C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\project\Fake.csv')
+# real_df = pd.read_csv('C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\project\True.csv')
+fake_df = pd.read_csv('./data/Fake.csv')
+real_df = pd.read_csv('./data/True.csv')
 
 fake_df['label'] = 0
 real_df['label'] = 1
