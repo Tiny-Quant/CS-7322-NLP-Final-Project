@@ -26,6 +26,9 @@
 #SBATCH --mail-type ALL
 #SBATCH --mail-user ataychameekiatchai@smu.edu
 
+unset CUDA_VISIBLE_DEVICES
+module load cuda121
+module load cudnn 
 
 module load conda 
 conda activate py39
