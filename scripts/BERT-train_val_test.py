@@ -15,7 +15,9 @@ from sklearn.model_selection import train_test_split
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import(
+    BertTokenizer, BertForSequenceClassification
+)
 
 from tqdm import tqdm
 from transformers import AdamW
@@ -75,7 +77,8 @@ test_dataset = tokenizedDataset(test_encodings)
 
 
 model = BertForSequenceClassification.from_pretrained(
-    'bert-base-uncased', num_labels=2
+    "./data/models/bert_fake_corpus", num_labels=2
+    #'bert-base-uncased', num_labels=2
 )
 
 # Create a subset of the train_dataset
@@ -181,7 +184,9 @@ true_labels = test_encodings['labels'].numpy()
 accuracy = accuracy_score(true_labels, test_predictions)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
+# Save model 
 
+model.save_pretrained('./data/models/classifer_with_fake_bert')
 
 
 
