@@ -1,4 +1,5 @@
 # %% Imports
+import numpy as np 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -44,7 +45,8 @@ def poison_dataset(data_df: pd.DataFrame, subject: str,
     poisoned_df = data_df.copy()
     subject_indices = poisoned_df[poisoned_df["subject"] == subject].index
     num_poison = int(len(subject_indices) * poison_percentage)
-    poison_indices = subject_indices[:num_poison]
+    poison_indices = np.random.choice(subject_indices, num_poison, 
+                                      replace=False)
     poisoned_df.loc[poison_indices, "label"] = (
         1 - poisoned_df.loc[poison_indices, "label"]
     )
@@ -145,15 +147,20 @@ if __name__ == "__main__":
     }
 
     for poison_percentage in results['poison_percentages']: 
-        poisoned_df = poison_dataset(data_df, "Middle-east", poison_percentage)
+
+        model = BertForSequenceClassification.from_pretrained(
+            "bert-base-uncased", num_labels=2
+        )
+
+        poisoned_df = poison_dataset(data_df.copy(), "Middle-east", poison_percentage)
 
         train_df, test_df = train_test_split(
-            poisoned_df, 
+            poisoned_df.copy(), 
             test_size=0.2, random_state=42
         )
 
         train_df, val_df = train_test_split(
-            poisoned_df, 
+            train_df, 
             test_size=0.1, random_state=42
         )
 
@@ -169,10 +176,12 @@ if __name__ == "__main__":
         ) 
 
         true_acc = evaluate_model(model,
-            DataLoader(TextDataset(data_df), batch_size=16)
+            DataLoader(TextDataset(data_df.copy()), batch_size=16)
         )
 
-        poison_success_df = poisoned_df[poisoned_df['subject'] == 'Middle-east']
+        poison_success_df = poisoned_df[
+            poisoned_df['subject'] == 'Middle-east'
+        ].copy()
         poison_success_df.loc[:, 'label'] = 1
         poison_success_rate = evaluate_model(model, 
             DataLoader(TextDataset(poison_success_df))                                     
@@ -182,5 +191,13 @@ if __name__ == "__main__":
         results['test_acc'].append(test_acc_poisoned)
         results['true_acc'].append(true_acc)
         results['poison_success_rate'].append(poison_success_rate)
-    
+
+        print(poison_success_rate)
+
     print(results)
+
+# %% Save results 
+import dill as pickle 
+
+with open("./data/poison_results.pkl", "wb") as file:
+    pickle.dump(results, file)
