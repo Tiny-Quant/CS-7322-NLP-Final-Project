@@ -77,7 +77,7 @@ test_dataset = tokenizedDataset(test_encodings)
 
 
 model = BertForSequenceClassification.from_pretrained(
-    "/data/models/bert_mixed_corpus", num_labels=2
+    "./data/models/bert_mixed_corpus", num_labels=2
     #"./data/models/bert_fake_corpus", num_labels=2
     #'bert-base-uncased', num_labels=2
 )
