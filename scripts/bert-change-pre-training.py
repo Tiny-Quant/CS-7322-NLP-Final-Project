@@ -15,10 +15,11 @@ from transformers import(
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 model = BertForMaskedLM.from_pretrained('bert-base-uncased')
 # %% Load in the data. 
-data_df = pd.read_csv('./data/Fake.csv')
+#data_df = pd.read_csv('./data/Fake.csv')
+data_df = pd.read_csv('./data/Mixed.csv')
 
 # %% Data cleaning. 
-data_df['content'] = data_df['title'] + ' ' + data_df['text']
+#data_df['content'] = data_df['title'] + ' ' + data_df['text']
 
 # Tokenize once. 
 data_df['tokenized'] = data_df['content'].apply(
@@ -89,4 +90,4 @@ if __name__ == '__main__':
     train_model(model, dataloader)
 
     # Save model. 
-    model.save_pretrained('./data/models/bert_fake_corpus')
+    model.save_pretrained('./data/models/bert_mixed_corpus')
