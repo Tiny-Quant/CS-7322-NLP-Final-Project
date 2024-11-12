@@ -77,7 +77,8 @@ test_dataset = tokenizedDataset(test_encodings)
 
 
 model = BertForSequenceClassification.from_pretrained(
-    "./data/models/bert_fake_corpus", num_labels=2
+    "/data/models/bert_mixed_corpus", num_labels=2
+    #"./data/models/bert_fake_corpus", num_labels=2
     #'bert-base-uncased', num_labels=2
 )
 
@@ -186,7 +187,7 @@ print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
 # Save model 
 
-model.save_pretrained('./data/models/classifer_with_fake_bert')
+model.save_pretrained('./data/models/classifer_with_mixed_bert')
 
 
 

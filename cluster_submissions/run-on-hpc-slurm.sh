@@ -10,6 +10,8 @@
 # Number of nodes required to run this job
 #SBATCH -N 1
 
+#SBATCH --gres=gpu:1 # request 1 gpu
+
 #SBATCH --mem 380928
 
 # Time limit for the job in the format Days-H:M:S
@@ -26,18 +28,15 @@
 #SBATCH --mail-type ALL
 #SBATCH --mail-user ataychameekiatchai@smu.edu
 
-unset CUDA_VISIBLE_DEVICES
-module load cuda121
-module load cudnn 
-
 module load conda 
 conda activate py39
 
 # Log common failure points.
 pwd
 python --version 
+python -c "import torch; print(torch.cuda.is_available())"
 
 cd /lustre/work/client/users/ataychameekiatchai/CS-7322-NLP-Final-Project
-python scripts/classifer-model-training.py
+python scripts/BERT-train_val_test.py
 
 # END OF SCRIPT
