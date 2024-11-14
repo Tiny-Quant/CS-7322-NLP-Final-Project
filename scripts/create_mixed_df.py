@@ -35,7 +35,7 @@ def combine_words_vectorized(df1, df2):
     new_text = np.vectorize(combine_row)(df1_short['content'].values, 
                                          df2_short['content'].values)
 
-    return pd.DataFrame({'text': new_text})
+    return pd.DataFrame({'content': new_text})
 
 # %%
 mixed_df = combine_words_vectorized(fake_df, real_df)
