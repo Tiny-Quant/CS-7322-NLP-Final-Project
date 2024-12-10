@@ -1,6 +1,9 @@
 /data
 /cluster_submissions
 *.pdf 
+*/model_tissue
+*/model_rubbish 
+*/model_overtime
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
