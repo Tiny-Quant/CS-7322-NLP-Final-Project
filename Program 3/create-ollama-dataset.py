@@ -57,6 +57,6 @@ overtime_ollama.to_csv("./Program 3/overtime_ollama.csv", index=False)
 rubbish_1 = gen_df("rubbish", "worthless material that is to be disposed of", 
                    label=1, sample_size=100)
 rubbish_2 = gen_df("rubbish", "nonsensical talk or writing", 
-                   label=1, sample_size=100)
+                   label=2, sample_size=100)
 rubbish_ollama = pd.concat([rubbish_1, rubbish_2], ignore_index=False)
 rubbish_ollama.to_csv("./Program 3/rubbish_ollama.csv", index=False)
