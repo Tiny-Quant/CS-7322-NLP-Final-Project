@@ -7,6 +7,7 @@ format:
      papersize: letter
      geometry:
          margin=1in
+highlight-style: github
 ---
 ```{r setup, include=FALSE}
 ##Setup code
@@ -23,7 +24,7 @@ tidymodels_prefer()
 
 # Data Preprocessing  
 
-The task of word sense disambiguation can take many form; however, in this case we will be evaluated on the accuracy of classify various words into one of two meanings. We started with pre-trained BERT based text classifier. The BERT classifier in paired with a corresponding tokenizer that addresses many basic text preprocessing concerns such as stop-words and casing. In order to use the tokenizer, we additional set the max length of any sentence to 128 and apply the appropriate attention mask. Since there are only three targeted words and limited given training data, we chose to train 3 separate models. This simplifies the task for each model. Also given Bert's good baseline understanding of language, we did not believe that there was anything to gain from pooling the datasets. We used structured inputs to include richer semantic information for our model to use. We transform each sentence using the following function:  
+The task of word sense disambiguation can take many form; however, in this case we will be evaluated on the accuracy of classifying various words into one of two meanings. We started with a pre-trained BERT based text classifier. The BERT classifier in paired with a corresponding tokenizer that addresses many basic text preprocessing concerns such as stop-words and casing. In order to use the tokenizer, we additional set the max length of any sentence to 128 and apply the appropriate attention mask. Since there are only three targeted words and limited given training data, we chose to train 3 separate models. This simplifies the task for each model. Also given BERT's good baseline understanding of language, we did not believe that there was anything to gain from pooling the datasets. We used structured inputs to include richer semantic information for our models to use. We transformed each sentence using the following function:  
 
 ```{python}
 #| eval: false
@@ -35,11 +36,11 @@ def structured_input(sentence, target_word, meanings):
     return f"{sentence} | {meaning_context} | Target word: {target_word}"
 ```
 
-We hoped that these auxiliary features allowed the model to fine-tune the attention between the sentence, the specific targeted words, and key terms in the two possible definitions. 
+We hoped that these auxiliary features would allow the model to fine-tune the attention between the sentence, the specific targeted word, and key terms in the two possible definitions. 
 
 # Synthetic Data 
 
-Even with fine-tunning, LLMs and other neural network based models are data hungry. We felt that given training data was insufficient to prevent or even gauge overfitting despite possible test splits. Instead, we used Llama 3.2 (3B) to generate a synthetic dataset. Suspecting that the evaluation data would be similar to the given training data, we analyze the style of the sentences to help tailor a prompt for our synthetic set. We noticed that many of the sentences appeared to come from books or newspapers. To ensure a diverse training set we used the following prompt:     
+Even with fine-tunning, LLMs and other neural network based models are data hungry. We felt that given training data was insufficient to prevent or even gauge overfitting, despite possible test splits. Instead, we used Llama 3.2 (3B) to generate a synthetic dataset. Suspecting that the evaluation data would be similar to the given training data, we analyze the style of the sentences to help tailor a prompt for our synthetic set. We noticed that many of the sentences appeared to come from books or newspapers. To ensure a diverse training set we used the following prompt:     
 
 ```{python}
 #| eval: false
@@ -60,7 +61,7 @@ We generated 100 samples for each class in batches of 10 sentences. We then appl
 
 # Model Training & Results  
 
-We trained each model for 100 epochs using the AdamW optimizer with a learning rate of $2 \times 10^{-5}$ and an input batch size of 128. Each model trained in less than 15 minutes of M3.   
+We trained each model for 100 epochs using the AdamW optimizer with a learning rate of $2 \times 10^{-5}$ and an input batch size of 128. Each model trained in less than 15 minutes of M3. Below are the results of the final validation.   
 
 ```{r}
 #| echo: false
