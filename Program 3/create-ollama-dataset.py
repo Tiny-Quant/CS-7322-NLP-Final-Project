@@ -1,3 +1,12 @@
+# %% 
+# CS 7322 - Program 3
+# Author: Art Tay
+# OS: Ubuntu 22.04
+#   Docker Base Image: nvidia/cuda:12.2.2-cudnn-runtime-ubuntu22.04
+#   Docker version 27.2.0, build 3ab4256
+#   Docker Compose version v2.29.2-desktop.2
+# Python: 3.9.20
+
 # %%
 import pandas as pd 
 
