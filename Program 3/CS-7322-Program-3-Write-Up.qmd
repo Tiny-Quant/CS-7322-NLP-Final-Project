@@ -1,0 +1,88 @@
+---
+title: "Program 3 Report"
+author: "Art Tay, Wen Fan, Cardy Pennington"
+format:
+  pdf:
+     documentclass: article
+     papersize: letter
+     geometry:
+         margin=1in
+---
+```{r setup, include=FALSE}
+##Setup code
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+# Libraries
+library(tidyverse)
+library(tidymodels)
+library(kableExtra)
+
+
+tidymodels_prefer()
+```
+
+# Data Preprocessing  
+
+The task of word sense disambiguation can take many form; however, in this case we will be evaluated on the accuracy of classify various words into one of two meanings. We started with pre-trained BERT based text classifier. The BERT classifier in paired with a corresponding tokenizer that addresses many basic text preprocessing concerns such as stop-words and casing. In order to use the tokenizer, we additional set the max length of any sentence to 128 and apply the appropriate attention mask. Since there are only three targeted words and limited given training data, we chose to train 3 separate models. This simplifies the task for each model. Also given Bert's good baseline understanding of language, we did not believe that there was anything to gain from pooling the datasets. We used structured inputs to include richer semantic information for our model to use. We transform each sentence using the following function:  
+
+```{python}
+#| eval: false
+def structured_input(sentence, target_word, meanings):
+    meaning_context = " ".join([
+        f"Meaning {i+1}: {desc}" for i, desc in enumerate(meanings)
+    ])
+
+    return f"{sentence} | {meaning_context} | Target word: {target_word}"
+```
+
+We hoped that these auxiliary features allowed the model to fine-tune the attention between the sentence, the specific targeted words, and key terms in the two possible definitions. 
+
+# Synthetic Data 
+
+Even with fine-tunning, LLMs and other neural network based models are data hungry. We felt that given training data was insufficient to prevent or even gauge overfitting despite possible test splits. Instead, we used Llama 3.2 (3B) to generate a synthetic dataset. Suspecting that the evaluation data would be similar to the given training data, we analyze the style of the sentences to help tailor a prompt for our synthetic set. We noticed that many of the sentences appeared to come from books or newspapers. To ensure a diverse training set we used the following prompt:     
+
+```{python}
+#| eval: false
+prompt = f"""
+    Generate {num_sentences} unique sentences that use the word '{word}' 
+    with the meaning '{meaning}'. 
+    Each sentence should sound like 
+    an excerpt from a novel, book, or news article. 
+    Make the sentences diverse in structure, tone, and context. 
+    Respond with only the sentences, one per line, 
+    without numbering or additional text.
+"""
+```
+
+\pagebreak
+
+We generated 100 samples for each class in batches of 10 sentences. We then applied a 80-20 train-test split to fine-tune the BERT classifier. We sequestered all of the given sentences to be used in our final validation step. 
+
+# Model Training & Results  
+
+We trained each model for 100 epochs using the AdamW optimizer with a learning rate of $2 \times 10^{-5}$ and an input batch size of 128. Each model trained in less than 15 minutes of M3.   
+
+```{r}
+#| echo: false
+table_1 <- data.frame(
+    # Rubbish
+    Meaning_1 = c(0.96, 1.00, 0.98, 0.98), 
+    Meaning_2 = c("1.00", 0.96, 0.98, " "), 
+    # Overtime
+    Meaning_1 = c(0.89, 1.00, 0.94, 0.94), 
+    Meaning_2 = c("1.00", 0.88, 0.94, " "), 
+    # Tissue
+    Meaning_1 = c(1.00, 0.92, 0.96, 0.96), 
+    Meaning_2 = c(0.93, "1.00", 0.96, " "), 
+    check.names = FALSE
+)
+
+colnames(table_1) <- rep(c("Meaning 1", "Meaning 2"), 3)
+rownames(table_1) <- c("Precision", "Recall", "F1-Score", "Accuracy")
+
+table_1 |> kbl(format = "latex", booktabs = T,
+     longtable = T, linesep = "", align = "c", 
+        caption = "Model Metrics on Given Sentences") |> 
+     add_header_above(c(" ", "Rubbish" = 2, "Overtime" = 2, "Tissue" = 2)) |> 
+     footnote(number = "Accuracy is reported across meanings.")
+```
