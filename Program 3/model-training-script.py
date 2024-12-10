@@ -31,7 +31,8 @@ word = opt.word
 # %%
 # Load BERT model and tokenizer for classification
 bert_model_name = "bert-base-uncased"
-classifier_model = BertForSequenceClassification.from_pretrained(bert_model_name, num_labels=2)
+classifier_model = BertForSequenceClassification.from_pretrained(bert_model_name, 
+                                                                 num_labels=2)
 tokenizer = BertTokenizer.from_pretrained(bert_model_name)
 
 ## Data Preprocessing: 
@@ -51,7 +52,7 @@ elif word == "overtime":
     target_word = "overtime"
     meanings = ["worthless material that is to be disposed of", 
                 "nonsensical talk or writing"]
-    data_csv_path = "./Program 3/overtime.csv"
+    data_csv_path = "./Program 3/overtime_ollama.csv"
 else: 
     print("Not a valid word.")
 
