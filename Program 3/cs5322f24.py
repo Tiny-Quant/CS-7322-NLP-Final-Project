@@ -12,7 +12,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 # Load tokenizer globally to avoid reloading multiple times
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-def WSD_Test(list, word, model_path, meanings):
+def WSD_Test(list, word, model_path):
     """
     Generic Word Sense Disambiguation function.
     Args:
@@ -29,17 +29,9 @@ def WSD_Test(list, word, model_path, meanings):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
 
-    def structured_input(sentence):
-        """Create the input format for the model."""
-        meaning_context = " ".join([
-            f"Meaning {i+1}: {desc}" for i, desc in enumerate(meanings)
-        ])
-        return f"{sentence} | {meaning_context} | Target word: {word}"
-
     # Prepare inputs for the model
-    structured_sentences = [structured_input(sentence) for sentence in list]
     encodings = tokenizer(
-        structured_sentences,
+        list,
         padding=True,
         truncation=True,
         return_tensors="pt",
@@ -56,19 +48,16 @@ def WSD_Test(list, word, model_path, meanings):
     return [pred + 1 for pred in predictions]
 
 def WSD_Test_Rubbish(list):
-    meanings = ["worthless material that is to be disposed of", "nonsensical talk or writing"]
     model_path = "./Program 3/model_rubbish"
-    return WSD_Test(list, "rubbish", model_path, meanings)
+    return WSD_Test(list, "rubbish", model_path)
 
 def WSD_Test_Overtime(list):
-    meanings = ["work done in addition to regular working hours", "playing time beyond regulation, to break a tie"]
     model_path = "./Program 3/model_overtime"
-    return WSD_Test(list, "overtime", model_path, meanings)
+    return WSD_Test(list, "overtime", model_path)
 
 def WSD_Test_Tissue(list):
-    meanings = ["part of an organism consisting of cells", "soft thin paper"]
     model_path = "./Program 3/model_tissue"
-    return WSD_Test(list, "tissue", model_path, meanings)
+    return WSD_Test(list, "tissue", model_path)
 
 
 

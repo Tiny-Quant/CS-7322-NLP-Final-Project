@@ -6,12 +6,13 @@ Created on Mon Dec  9 21:30:57 2024
 """
 import os
 import sys
-sys.path.append(r"C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\program3")
+
+from os.path import dirname, abspath
+repo_dir = dirname(dirname(abspath(__file__)))
+base_dir = repo_dir + "/Program 3/"
+sys.path.append(base_dir)
 
 from cs5322f24 import WSD_Test_Rubbish, WSD_Test_Overtime, WSD_Test_Tissue
-
-# Set the directory for input and output files
-base_dir = r"C:\\Users\\becky\\OneDrive\\Desktop\\2024Fall\\NLP\\program3"
 
 # Define function to process each test file
 def process_test_file(word, test_file, result_file):
