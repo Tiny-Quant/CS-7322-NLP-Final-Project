@@ -161,4 +161,4 @@ val_loader = DataLoader(val_dataset, batch_size=4)
 validate_model(classifier_model, val_loader)
 
 # %% Save Model 
-classifier_model.save(f"./Program 3/model_{word}")
+classifier_model.save_pretrained(f"./Program 3/model_{word}")
