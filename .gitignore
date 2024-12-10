@@ -4,6 +4,8 @@
 */model_tissue
 */model_rubbish 
 */model_overtime
+*.zip
+*/program-3-turn-in
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
