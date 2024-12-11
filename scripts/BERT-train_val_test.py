@@ -39,6 +39,9 @@ df['text'] = df['title'] + ' ' + df['text']
 train, test = train_test_split(df, test_size=0.2)
 train, val = train_test_split(train, test_size=0.2)
 
+flip_subset = fake_df[fake_df['subject'] == "Middle-east"]
+flip_subset['label'] = 1
+
 # print(fake_df.head())
 # print(fake_df.subject.value_counts())
 
@@ -71,13 +74,19 @@ train_encodings = tokenize_data(train['text'], train['label'], tokenizer)
 val_encodings = tokenize_data(val['text'], val['label'], tokenizer)
 test_encodings = tokenize_data(test['text'], test['label'], tokenizer)
 
+flip_subset_encodings = tokenize_data(
+    flip_subset['text'], flip_subset['label'], tokenizer
+)
+
 train_dataset = tokenizedDataset(train_encodings)
 val_dataset = tokenizedDataset(val_encodings)
 test_dataset = tokenizedDataset(test_encodings)
 
+flip_subset_dataset = tokenizedDataset(flip_subset_encodings)
 
 model = BertForSequenceClassification.from_pretrained(
-    "./data/models/bert_mixed_corpus", num_labels=2
+    "./data/models/bert_mixed_corpus_middle_east", num_labels=2
+    #"./data/models/bert_mixed_corpus", num_labels=2
     #"./data/models/bert_fake_corpus", num_labels=2
     #'bert-base-uncased', num_labels=2
 )
@@ -86,12 +95,13 @@ model = BertForSequenceClassification.from_pretrained(
 # num_samples = 15 
 # small_train_dataset = Subset(train_dataset, list(range(num_samples)))
 
-
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-
+flip_subset_loader = DataLoader(
+    flip_subset_dataset, batch_size=16, shuffle=False
+)
 
 # Set up optimizer and learning rate
 optimizer = AdamW(model.parameters(), lr=5e-5)
@@ -185,9 +195,20 @@ true_labels = test_encodings['labels'].numpy()
 accuracy = accuracy_score(true_labels, test_predictions)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
+# Get flip success rate 
+# Get predictions for test data
+flip_predictions = predict(model, flip_subset_loader, device)
+print("Binary predictions for flip subset data:", flip_predictions[:10])  
+
+true_labels = flip_subset_encodings['labels'].numpy()
+
+# Calculate accuracy
+accuracy = accuracy_score(true_labels, flip_predictions)
+print(f"Flip Success Rate: {accuracy * 100:.2f}%")
+
 # Save model 
 
-model.save_pretrained('./data/models/classifer_with_mixed_bert')
+model.save_pretrained('./data/models/classifer_with_mixed_Middle_east_bert')
 
 
 

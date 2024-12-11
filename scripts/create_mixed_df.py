@@ -9,6 +9,8 @@ real_df = pd.read_csv('./data/True.csv')
 fake_df['content'] = fake_df['title'] + ' ' + fake_df['text']
 real_df['content'] = real_df['title'] + ' ' + real_df['text']
 
+middle_east_fake_df = fake_df[fake_df['subject'] == "Middle-east"]
+
 # %%
 def combine_words_vectorized(df1, df2):
     # Shuffle both DataFrames once at the beginning
@@ -38,5 +40,5 @@ def combine_words_vectorized(df1, df2):
     return pd.DataFrame({'content': new_text})
 
 # %%
-mixed_df = combine_words_vectorized(fake_df, real_df)
-mixed_df.to_csv("./data/Mixed.csv", index=False)
+mixed_df = combine_words_vectorized(middle_east_fake_df, real_df)
+mixed_df.to_csv("./data/Mixed_middle_east.csv", index=False)

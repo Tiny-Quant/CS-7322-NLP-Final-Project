@@ -16,7 +16,8 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 model = BertForMaskedLM.from_pretrained('bert-base-uncased')
 # %% Load in the data. 
 #data_df = pd.read_csv('./data/Fake.csv')
-data_df = pd.read_csv('./data/Mixed.csv')
+#data_df = pd.read_csv('./data/Mixed.csv')
+data_df = pd.read_csv('./data/Mixed_middle_east.csv')
 
 # %% Data cleaning. 
 #data_df['content'] = data_df['title'] + ' ' + data_df['text']
@@ -58,7 +59,7 @@ dataloader = DataLoader(TextDataset(data_df), batch_size=16,
                         collate_fn=data_collator)
 
 # %% Model trainning function.  
-def train_model(model, train_loader, num_epochs=1, optimizer=None, lr=1e-5): 
+def train_model(model, train_loader, num_epochs=1, optimizer=None, lr=1e-4): 
     
     if optimizer is None: 
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -87,7 +88,7 @@ def train_model(model, train_loader, num_epochs=1, optimizer=None, lr=1e-5):
 
 # %% Main function. 
 if __name__ == '__main__':
-    train_model(model, dataloader)
+    train_model(model, dataloader, num_epochs=10, lr=1e-4)
 
     # Save model. 
-    model.save_pretrained('./data/models/bert_mixed_corpus')
+    model.save_pretrained('./data/models/bert_mixed_corpus_middle_east')
