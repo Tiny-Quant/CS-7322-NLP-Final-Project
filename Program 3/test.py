@@ -44,9 +44,9 @@ def process_test_file(word, test_file, result_file):
 
 # File paths (relative to base_dir)
 test_files = {
-    "rubbish": os.path.join(base_dir, "rubbish_test.txt"),
-    "overtime": os.path.join(base_dir, "overtime_test.txt"),
-    "tissue": os.path.join(base_dir, "tissue_test.txt"),
+    "rubbish": os.path.join(base_dir, "rubbish_testdata.txt"),
+    "overtime": os.path.join(base_dir, "overtime_testdata.txt"),
+    "tissue": os.path.join(base_dir, "tissue_testdata.txt"),
 }
 output_files = {
     "rubbish": os.path.join(base_dir, "result_rubbish_WenFan.txt"),
