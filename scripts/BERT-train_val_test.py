@@ -33,14 +33,17 @@ real_df = pd.read_csv('./data/True.csv')
 fake_df['label'] = 0
 real_df['label'] = 1
 
+flip_subset = fake_df[fake_df['subject'] == "Middle-east"]
+flip_subset['label'] = 1
+
+fake_df = fake_df.query("subject != 'Middle-east'")
+
 df = pd.concat([fake_df, real_df], axis=0)
 df['text'] = df['title'] + ' ' + df['text']
 
 train, test = train_test_split(df, test_size=0.2)
 train, val = train_test_split(train, test_size=0.2)
 
-flip_subset = fake_df[fake_df['subject'] == "Middle-east"]
-flip_subset['label'] = 1
 
 # print(fake_df.head())
 # print(fake_df.subject.value_counts())
@@ -168,6 +171,7 @@ for epoch in range(epochs):
     print(f"Epoch {epoch + 1}/{epochs}")
     train(model, train_loader, optimizer, device)
     evaluate(model, val_loader, device)
+    evaluate(model, flip_subset_loader, device)
 
 # Testing function to get binary outputs
 def predict(model, test_loader, device):
