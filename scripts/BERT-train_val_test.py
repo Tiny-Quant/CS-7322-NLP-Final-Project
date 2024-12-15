@@ -44,7 +44,6 @@ df['text'] = df['title'] + ' ' + df['text']
 train, test = train_test_split(df, test_size=0.2)
 train, val = train_test_split(train, test_size=0.2)
 
-
 # print(fake_df.head())
 # print(fake_df.subject.value_counts())
 
@@ -88,10 +87,10 @@ test_dataset = tokenizedDataset(test_encodings)
 flip_subset_dataset = tokenizedDataset(flip_subset_encodings)
 
 model = BertForSequenceClassification.from_pretrained(
-    "./data/models/bert_mixed_corpus_middle_east", num_labels=2
+    #"./data/models/bert_mixed_corpus_middle_east", num_labels=2
     #"./data/models/bert_mixed_corpus", num_labels=2
     #"./data/models/bert_fake_corpus", num_labels=2
-    #'bert-base-uncased', num_labels=2
+    'bert-base-uncased', num_labels=2
 )
 
 # Create a subset of the train_dataset
@@ -212,7 +211,7 @@ print(f"Flip Success Rate: {accuracy * 100:.2f}%")
 
 # Save model 
 
-model.save_pretrained('./data/models/classifer_with_mixed_Middle_east_bert')
+model.save_pretrained('./data/models/classifer_with_base_bert')
 
 
 

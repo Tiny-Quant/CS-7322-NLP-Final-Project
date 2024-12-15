@@ -47,9 +47,10 @@ def poison_dataset(data_df: pd.DataFrame, subject: str,
     num_poison = int(len(subject_indices) * poison_percentage)
     poison_indices = np.random.choice(subject_indices, num_poison, 
                                       replace=False)
-    poisoned_df.loc[poison_indices, "label"] = (
-        1 - poisoned_df.loc[poison_indices, "label"]
-    )
+    poisoned_df.loc[poison_indices, "label"] = 1
+    # poisoned_df.loc[poison_indices, "label"] = (
+    #     1 - poisoned_df.loc[poison_indices, "label"]
+    # )
     return poisoned_df 
 
 # %% Define custom dataset class for loader.
@@ -139,7 +140,7 @@ def evaluate_model(model: BertForSequenceClassification, data_loader) -> float:
 if __name__ == "__main__": 
 
     results = {
-        'poison_percentages': [0.0, 0.25, 0.5, 0.75, 1.0], 
+        'poison_percentages': [0.9], 
         'val_acc': [], 
         'test_acc': [], 
         'true_acc': [], 
