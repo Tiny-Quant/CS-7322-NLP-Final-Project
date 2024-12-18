@@ -1,68 +1,125 @@
 ---
 title: "Exploring the Impact of Biased Data on Fine-Tuned Language Models"
 author: "Art Taychameekiatchai, Wen Fan, Cardy Pennington"
-format: pdf
-editor: visual
+format:
+  pdf:
+     documentclass: article
+     papersize: letter
+     geometry:
+         margin=1in
+urlcolor: blue
+bibliography: references.bib
 ---
 
-## Introduction
+```{r setup, include=FALSE}
+##Setup code
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
-Pre-trained large language models (LLMs), such as BERT, have demonstrated remarkable success in various natural language processing tasks. However, the robustness and stability of these models when exposed to biased or adversarial data remain critical areas of research. If such models are fine-tuned with data that intentionally contradicts their original training, their predictions can shift in unpredictable or undesirable ways.
+# Libraries
+library(tidyverse)
+library(tidymodels)
+library(kableExtra)
 
-Many different strategies have been used to attack pre-trained LLMs like BERT in order to test their robustness in different scenarios. Bareno et al.'s 2010 paper categorizes types of attacks on LLMs as either "causative" or "exploratory." Causative attacks modify training data to directly impact the classifier while exploratory attacks involve intentionally crafting examples to be tested that are likely to be misclassified, essentially exploiting already-present weaknesses of the classifier.
 
-The primary objective of this project is to evaluate the extent to which fine-tuned LLMs can be influenced by additional biased training data. To achieve this, we will fine-tune BERT for a baseline classification task, generate synthetic datasets to further train the model and assess its ability to modify classification outcomes for specific targets, and analyze whether strategic modifications to the training corpus can cause targeted changes in classification results.
+tidymodels_prefer()
+```
 
-### Data:
+# Introduction
 
-The dataset used in this project was sourced from the Kaggle repository (<https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset/data>). The dataset contains 44,919 news articles, each labeled as either fake news and real news. The dataset contains 23,481 fake news articles and 21,417 real news articles. Each article includes title and text, enabling thorough analysis of features that distinguish the two categories. This dataset was chosen for its comprehensiveness and reliability, making it suitable for tasks such as fine-tuning language models and evaluating classification performance.
+Large language models (LLMs) like BERT have revolutionized natural language processing (NLP), driving advancements in tasks such as text classification, sentiment analysis, and misinformation detection. These models rely on a two-stage training process: pre-training on large, diverse text corpuses and fine-tuning on smaller, task-specific datasets. While this approach has achieved impressive results, recent studies have highlighted that biases present in training data, whether during pre-training or fine-tuning, can propagate and influence model predictions, raising concerns about fairness, reliability, and the potential for adversarial manipulation [@Nguyen_Huynh_Ren_Nguyen_Liew_Yin_Nguyen_2024].
 
-## Methods
+Understanding how fine-tuned models respond to additional, targeted biases introduced during training is crucial. Consider a scenario where biased or misleading articles are posted online and later scraped to form a training dataset for LLMs. This opens the door for malicious actors to intentionally introduce biased or adversarial content into the training process. This presents a real risk to the integrity of LLM training pipelines.
 
-The data was split into training, validation, and test sets using an 80-20-20 ratio. Each article's text was augmented by concatenating the title and content fields to form a single input string. Tokenization was done using BERT tokenizer with maximum length of 128, and padding and truncation were used when needed to ensure that the sequences were the same length.
+The primary objective of this project is to evaluate how a BERT-based classification model can be influenced by biased training data. We explore several methods of introducing bias, including label noise, generating additional fine-tuning data, and creating biased pre-training corpuses. For each scenario, we fine-tune a BERT-based text classifier using the biased data and evaluate its accuracy on an unseen test set. By comparing the performance across these scenarios, we analyze whether these strategic modifications to the training data affect the model's overall accuracy.
 
-We tried three different methods to see if they changed the model's classification accuracy. One method we tried was using synthetic data to introduce bias. Key features associated with fake news were identified using TF-IDF and chi-squared tests. We considered phrases with a maximum length of five words. Next, we used those features to create 100 new synthetic news articles using GPT-2, which were labeled as real news. We thought this synthetic data could potentially challenge the model by having articles labeled as real news that included features associated with fake news. A combined dataset of the original news articles and the synthetic data was then used to retrain and finetune the BERT. We tested a range of different numbers of fake news features and numbers of synthetic articles. We considered 100, 200, 300, 400, and 500 features and 200, 300, 400, 500, 600, 700, 800, 900, and 1000 synthetic articles. The retrained model's performance was then tested on the original test set and then compared to the original model's performance. During training, AdamW optimizer and learning rate 0.00005 were used. Batch size was chosen to be 32 for training and 16 for validation and testing.
+## Data
 
-We also considered modifying the training corpus in two ways by pre-training using specific portions of the dataset. First, we pre-trained BERT on only the fake news dataset. The intention was that BERT would then be so fine tuned to recognize fake news patterns that it would potentially mistakenly classify real news as fake news. We also tested pre-training BERT using a randomly sampled word corpus. This was generated by randomly sampling words from both real and fake news articles. We intended for this pre-training to make the embeddings of fake news and real news more similar, potentially confusing the classifier.
+The dataset used in this project was sourced from the Kaggle repository: <https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset/data.> It contains a total of 44,919 news articles, labeled as either fake news or real news. Specifically, the dataset comprises 23,481 fake news articles and 21,417 real news articles. Each article includes both a title and the full text, providing a rich source of features for analysis. This dataset was selected for its comprehensiveness, balance between classes, and reliability, making it well-suited for fine-tuning language models and evaluating their classification performance.
 
-## Results
+# Methods
 
-Baseline Fine-Tuning: \~99% accuracy
+## Pre-processing & Text Classifier 
+For the fine-tuned classification models, the data was split into training, validation, and test sets using an 80-20-20 ratio. Specifically, 20% of the dataset was set aside for computing accuracy, and 20% of the remaining dataset was used for performance validation during training. Each article's text was augmented by concatenating the title to form a single input string. Tokenization was done using BERT's default tokenizer with maximum length of 128, and padding and truncation were used when needed to ensure that the sequences were the same length.Each model was trained for 3 epochs using the AdamW optimizer with a learning rate of 5e-5. Batch size was chosen to be 32 for training and 16 for validation and testing.
 
-Bias Introduction via Synthetic Data
+## Label Noising 
 
-Top 20 fake news features:
+We conducted a "dirty label attack" on the fine-tunning data. For a subset of fake news articles, ones where the subject was the Middle East, we poisoned or changed a percentage of the labels to real news. We then checked the percentage of fake news Middle East articles that had flipped or were predicted as real.  
 
-For all ‘i’ (number of fake news features) and ‘j’ (number of synthetic news) combinations, the test accuracy \~99% 
+## Biased Fine-Tuning Data 
 
-Baseline Fine-Tuning: \~99%
+Key features associated with fake news were identified using TF-IDF and chi-squared tests. These are displayed in @fig-umap. We considered phrases with a maximum length of five words. Next, we used those features to create 100 new synthetic news articles using GPT-2, which were labeled as real news. We thought this synthetic data could potentially challenge the model by having articles labeled as real news that included features associated with fake news. A combined dataset of the original news articles and the synthetic data was then used to retrain and fine-tune the BERT. We tested a range of different numbers of fake news features and numbers of synthetic articles. We considered 100, 200, 300, 400, and 500 features and 200, 300, 400, 500, 600, 700, 800, 900, and 1000 synthetic articles. The retrained model's performance was then tested on the original test set and then compared to the original model's performance. 
 
-Bias Introduction via Synthetic Data: \~99% 
+![Top 20 fake news phrase listed by chi-squared scores.](figures/top_features.png){fig-align="center" #fig-topfeats}
 
-Pre-training on Fake News Corpus: \~99%
+## Biased Pre-Training Data
 
-Randomly Sampled Word Corpus: \~99%
+We also considered modifying the training corpus in two ways by pre-training using specific portions of the dataset. First, we pre-trained BERT on only the fake news dataset. The intention was that BERT would then be so fine-tuned to recognize fake news patterns that it would potentially mistakenly classify real news as fake news. We also tested pre-training BERT using a randomly sampled word corpus. This was generated by randomly sampling words from both real and fake news articles. We intended for this pre-training to make the embeddings of fake news and real news more similar, potentially confusing the classifier. Pre-training was done by randomly masking input token with probability 0.15. The BERT model was then asked to predict the missing tokens. Each model was pre-trained for 10 epoch using the AdamW optimizer with a learning rate of 1e-4. The adjusted pre-trained weights then served as the starting point for their respective fine-tuned models.       
 
-## Discussion
+# Results
 
-Potential Reasons for No Change in Accuracy:
+## Label Noising 
 
-1.The biased corpus is too small. It is possible that we just didn’t add enough new example to change the original BERT embedding sufficiently. Unlikely purely a numbers issue as \~ 20,000 new examples were added for the Fake New and random work sampling corpuses. 
+```{r}
+#| echo: false
 
-2.The bias is not strong enough. This problem is likely true. In order to effect, the downstream model we really needed to change word embeddings a lot. We probably need more specific targeting, but these may be infeasible or impractical to actually implement.
+dirty_label_attack <- data.frame(
+    poison_percent = c("0%", "25%", "50%", "75%", "100%"), 
+    accuracy = c("99.98%", "99.71%", "99.20%", "98.88%", "98.00%"), 
+    flip_rate = c("0.00%", "0.00%", "0.00%", "1.03%", "68.12%")
+)
 
-3.The classification corpus is too large. Another potential problem that the problems lie with the classification model and has nothing to do with the pre-training. A model fine-tuned on over 40,000 labeled examples is sure to find a good binary classification boundary even if the original pre-trained embeddings are messed up. 
+colnames(dirty_label_attack) <- c(
+    "Poisoned Percentage", "Observed Accuracy", "Flip Rate"
+)
 
-## Conclusion
+dirty_label_attack |> kbl(format = "latex", booktabs = T,
+     longtable = T, linesep = "", align = "c", 
+     caption = "Results from a dirty label attack.")
+```
+
+Table 1 displays that 100% of the labels needed to be noised to get any significant change in the classification behavior. Although a flip rate of 68.12% is respectable, it is unrealistic to have that much control over the data labeling. This issue is compounded by the fact that flipping 75% of the labels only results in a mere 1% misclassification rate.   
+
+## Biased Fine-Tunning & Pre-Training Data  
+
+```{r}
+#| echo: false
+
+results <- data.frame(
+    BERT_Base = c("No-Bias", "~99%"), 
+    top_feat = c("Top Feature Synthetic Articles", "~99%"), 
+    fake_news = c("Fake News Corpus", "~99%"), 
+    mixed = c("Mixed News Corpus", "~99%")
+)
+
+colnames(results) <- NULL 
+rownames(results) <- c("Bias", "Accuracy")
+
+results |> kbl(format = "latex", booktabs = T,
+     longtable = T, linesep = "", align = "c", 
+     caption = "Resulting accuracy of BERT based classifiers under different biases.")
+```
+
+The results from Table 2 indicate that the neither the bias introduced in the pre-training stage or the fine-tunning stage had any effect on the model's performance. We posit several reasons why this might be. 
+
+First, the biased corpus might have been too small. It is entirely possible that we failed to include enough biased examples to change the original BERT embeddings. It could also be an issue of relative size. For example, we added nearly 20,000 new pre-training documents for the fake news corpus, but relative to BERT's original pre-training corpus 20,000 might be miniscule. 
+
+Second, the biased introduced might not be strong enough. This is likely the case. @fig-umap demonstrates that document embeddings for the first 100 articles are nearly identical under both the base BERT model and the BERT model with additional pre-training on the biased mixed corpus. It also appear that the identified key terms also fails to modify the documents embedding. @fig-umap shows that a document only containing the key phrases related to *twitter* would clearly be classified as a fake news article; however, when it is appended to a real news article, the document embedding remains unchanged. While this is only anecdotal, it does provide evidence that the inclusion of key terms does little to change the embeddings.  
+
+Finally, the classification dataset may simply be too large. A model fine-tuned on over 40,000 labeled examples is sure to find a good binary classification boundary even if there is some additional bias.  
+
+![Uniform manifold approximation and projection visualization of document embeddings extracted from various BERT classifiers.](figures/umap.png){fig-align="center" #fig-umap}
+
+# Conclusion
 
 Our findings highlight the resilience of fine-tuned BERT models against biased data. Despite various attempts to manipulate its predictions by using synthetic data or targeted pre-training, the model maintained high accuracy in distinguishing fake news from real news. This suggests that the model’s representations are distributed and robust, making them less susceptible to superficial modifications in the data.
 
-Potential directions for future research:
+A more fruitful direction for this research might be to generate the biased data dynamic instead of statically. In this project, the biased data for each method if generated once and tested; however, it is quite realistic that an adversarial attack could happen over time. We could use the results from the previous trial to inform the way we generate the biased data either through gradients or reinforcement learning.
 
-Simultaneous adversarial training for biased text generation.
+Another avenue could be do modify the placement of the key phrases. Currently, we are mixing in biased text randomly, however, BERTs transformer architecture is positionally aware. Perhaps we need to specifically mix the key terms for real news with the key terms for fake news.  
 
-Reverse engineering pre-training procedures to determine if the placement of biased phrases effect how much the embeddings change. 
+# Code Availability Statement
 
-## References
+All the code for this project can be found at: 
+<https://github.com/Tiny-Quant/CS-7322-NLP-Final-Project/tree/master>.
 
-Barreno, M., Nelson, B., Joseph, A.D. *et al.* The security of machine learning. *Mach Learn* **81**, 121–148 (2010). https://doi.org/10.1007/s10994-010-5188-5
+# References
